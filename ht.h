@@ -59,7 +59,7 @@ struct DoubleHashProber : public Prober<KeyType>
     //==================================
     // Add data members, as desired
     //==================================
-		KeyType key_;
+		
 
 private:
     // Complete
@@ -98,7 +98,7 @@ public:
         HASH_INDEX_T modulus = findModulusToUseFromTableSize(m);
         // Compute probe stepsize given modulus and h2(k) 
         dhstep_ = modulus - h2_(key) % modulus;
-				key_ = key;
+				
     }
 
     // To be completed
@@ -107,7 +107,7 @@ public:
 			if( this->numProbes_ == this->m_ ) {
 					return this->npos; 
 			}
-			HASH_INDEX_T loc = ((this->start_ % this->m_) + ((this->numProbes_ * h2_(key_)) % this->m_)) % this->m_;
+			HASH_INDEX_T loc = (this->start_ + this->numProbes_ * dhstep_) % this->m_;
 			this->numProbes_++;
 			return loc;
     }
@@ -277,6 +277,7 @@ private:
     // ADD MORE DATA MEMBERS HERE, AS NECESSARY
 
 		size_t inserted_;
+		size_t size_inserted_;
 		size_t size_;
 		double resizeAlpha_;
 
@@ -307,6 +308,7 @@ HashTable<K,V,Prober,Hash,KEqual>::HashTable(
 		resizeAlpha_ = resizeAlpha;
 		size_ = CAPACITIES[mIndex_];
 		inserted_ = 0;
+		size_inserted_ = 0;
 }
 
 // To be completed
@@ -341,18 +343,35 @@ void HashTable<K,V,Prober,Hash,KEqual>::insert(const ItemType& p)
 {
 	// insert, then check if we are above threshold
 
+	if ((size_ * resizeAlpha_) / size_inserted_ <= 1) 
+	{
+		resize();
+	}
+
 	HASH_INDEX_T loc = this->probe(p.first);
 
 	if (loc != npos) {
 		HashItem* item = new HashItem(p);
+
+		if (table_[loc] == nullptr) {
+			inserted_++;
+			size_inserted_++;
+		}
+		else {
+			delete table_[loc];
+			table_[loc] = nullptr;
+		}
+
+		
+
 		table_[loc] = item;
-		inserted_++;
+
+	}
+	else {
+		throw std::logic_error("Error");
 	}
 
-	if ((size_ * resizeAlpha_) / inserted_ <= 1) 
-	{
-		resize();
-	}
+	
 
 }
 
@@ -365,7 +384,7 @@ void HashTable<K,V,Prober,Hash,KEqual>::remove(const KeyType& key)
 
 	if (loc != npos && table_[loc] != nullptr) {
 		table_[loc]->deleted = true;
-		
+		inserted_--;
 	}
 
 }
@@ -448,6 +467,7 @@ void HashTable<K,V,Prober,Hash,KEqual>::resize()
 
 	std::vector<ItemType> rehash_items;
 	inserted_ = 0;
+	size_inserted_ = 0;
 
 	for (size_t i = 0; i < CAPACITIES[mIndex_]; i++) {
 		if (table_[i] != nullptr) 
@@ -473,8 +493,6 @@ void HashTable<K,V,Prober,Hash,KEqual>::resize()
 		// if so, swap it with the element in that location
 
 		this->insert(rehash_items.at(i));
-		
-		
 
 	}
     
@@ -500,7 +518,7 @@ HASH_INDEX_T HashTable<K,V,Prober,Hash,KEqual>::probe(const KeyType& key) const
         }
         // fill in the condition for this else if statement which should 
         // return 'loc' if the given key exists at this location
-        else if(kequal_(key, (table_[loc]->item).first)) {
+        else if(kequal_(key, (table_[loc]->item).first) && !table_[loc]->deleted) {
 						return loc;
         }
         loc = prober_.next();

@@ -67,5 +67,6 @@ int main()
     }
     
     cout << "size: " << ht.size() << endl;*/
+		cout << ht.size() << endl;
     return 0;
 }
