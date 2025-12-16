@@ -96,4 +96,50 @@ bool boggleHelper(const std::set<std::string>& dict, const std::set<std::string>
 {
 //add your solution here!
 
+
+	/*
+	* for backtracking, if the word isn't in the prefixes, return false
+	* we want to insert a word if and only if the boggleHelper value of 
+	* its next letter is true, and if it is a valid prefix.
+	* boggleHelper will return true if the word is the size of 
+	* the thing that is being searched, or if the current word is not
+	* in the prefix tree, as it means that the end of this recursive search has been reached
+	*/
+	
+	if (prefix.find(word) == prefix.end())
+	{
+		// solution can't contain this word, so return without going any further
+		// this will result in whatever the last valid word was being returned as the actual word
+		return true;
+
+	}
+
+	else if (r >= board[0].size() || c >= board[0].size()) {
+		return true;
+	}
+
+	else 
+	{
+		
+		std::string candidate = word;
+		candidate.push_back(board[c][r]);
+
+		if (boggleHelper(dict, prefix, board, candidate, result, r+dr, c+dc, dr, dc)) 
+		{
+			if (dict.find(candidate) != dict.end())
+			{
+				result.insert(candidate);
+				return false;
+			}
+			else
+			{
+				return true;
+			}
+		}
+
+	}
+
+	return false;
+
+
 }
